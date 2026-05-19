@@ -21,12 +21,14 @@ bfs::SbusData radioData;
 #define E32_RX 27  // ESP32 RX ← E32 TX
 #define M0_PIN 2
 #define M1_PIN 4
-#define AUX_PIN 5
+#define AUX_PIN 34
 
 #define RADIO_CHANNEL 3
 
+
+
 HardwareSerial E32_UART(1); // create hard ware serial object for E32 module
-E32 E32_obj(&E32_UART, _19200, _19P2 , E32_RX, E32_TX, M0_PIN, M1_PIN, AUX_PIN); //e32 module object
+E32 E32_obj(&E32_UART, _115200, _9P6 , E32_RX, E32_TX, M0_PIN, M1_PIN, AUX_PIN); //e32 module object
 
 
 struct {
@@ -35,7 +37,7 @@ struct {
     uint16_t intData[RADIO_CHANNEL];     //[LH, LH, LH]
   };
 }frame;
-
+char radioFrame[50];
 
 void setup() {
   Serial.begin(115200);
@@ -60,7 +62,7 @@ void loop() {
 
       #ifdef DEBUG
         Serial.print("Radio ");
-        for(uint8_t i=0; i<12; i++){
+        for(uint8_t i=0; i<RADIO_CHANNEL; i++){
           Serial.print(radioData.ch[i]);
           Serial.print("  ");
         }
@@ -72,13 +74,23 @@ void loop() {
         frame.intData[i] = radioData.ch[i];
       }
 
-      E32_obj.sendTo(0x0B, 0xDD, 0xCC, START_BYTE);
-      E32_obj.sendByte(START_BYTE);
-      E32_obj.sendByte(RADIO_CHANNEL);
-      E32_obj.sendData(&frame.byteData[0], (RADIO_CHANNEL * 2));
-      E32_obj.sendByte(STOP_BYTE);
+
+      radioFrame[0]=0xDD;
+      radioFrame[1]=0xCC;
+      radioFrame[2]=0x0B;
+      radioFrame[3]=START_BYTE;
+      radioFrame[4]=START_BYTE;
+      radioFrame[5]=RADIO_CHANNEL;
+
+      for(uint8_t i=0; i<(RADIO_CHANNEL*2); i++){
+        radioFrame[6+i] = frame.byteData[i];
+      }
+      radioFrame[(6+(RADIO_CHANNEL*2))]=STOP_BYTE;
+
+      E32_obj.sendData((uint8_t *)radioFrame, (7+(RADIO_CHANNEL*2)));
+
   }
-  delay(50);
+  delay(70);
 
 
 }

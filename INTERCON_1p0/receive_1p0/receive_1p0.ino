@@ -24,10 +24,10 @@ bfs::SbusData radioData;
 #define M1_PIN 4
 #define AUX_PIN 5
 
-#define RADIO_CHANNEL 3
+#define RADIO_CHANNEL 16
 
 HardwareSerial E32_UART(1); // create hard ware serial object for E32 module
-E32 E32_obj(&E32_UART, _19200, _19P2 , E32_RX, E32_TX, M0_PIN, M1_PIN, AUX_PIN); //e32 module object
+E32 E32_obj(&E32_UART, _115200, _9P6 , E32_RX, E32_TX, M0_PIN, M1_PIN, AUX_PIN); //e32 module object
 
 
 struct {
@@ -38,7 +38,7 @@ struct {
 }frame;
 
 uint8_t e32_readState = 0, dataCount = 0, dataSize = 0;//state machine variable for e32 reading frame
-uint8_t temp[30];
+uint8_t temp[RADIO_CHANNEL * 2 + 2];
 
 void setup() {
   Serial.begin(115200);
@@ -86,17 +86,18 @@ void loop() {
 
       case 3:
             temp[dataCount] = c;
-            //Serial.println(dataCount);
+            //Serial.println(dataSize);
             if(dataCount==((dataSize*2)) && c == 0)
             {
               e32_readState = 0;
               for(uint8_t i=0; i<dataSize; i++){
                 frame.intData[i] = (uint16_t)((temp[i*2]) | temp[(i*2)+1]<<8);
-                //Serial.print(onlineData[i]);
-                //Serial.print(" ");}
+                Serial.print(frame.intData[i]);
+                Serial.print(" ");
               }
+              Serial.println();
             }            
-            else if(dataCount == ((dataSize*2)))
+            else if(dataCount >= ((dataSize*2)))
             {
               e32_readState = 0;
             }
@@ -104,16 +105,16 @@ void loop() {
       break;
     }
 
-    if(dataCount == (dataSize*2))
+    if(dataCount >= (dataSize*2))
     {
       break;
     }
   }
-  for(uint8_t i=0; i<3; i++){
+  /*for(uint8_t i=0; i<RADIO_CHANNEL; i++){
   Serial.print(frame.intData[i]);
   Serial.print("      ");
   }
-  Serial.println();
+  Serial.println();*/
 
 }
 
